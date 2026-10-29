@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#10151c">
+<title>X Battle Royale</title>
+<link rel="stylesheet" href="style.css">
+<script type="importmap">
+{
+  "imports": {
+    "three": "./vendor/three/three.module.min.js",
+    "three/addons/": "./vendor/three/addons/"
+  }
+}
+</script>
+</head>
+<body>
+<div id="game-container" aria-hidden="true"></div>
+
+<!-- Right-half invisible drag surface for camera look (buttons sit above it) -->
+<div id="look-area"></div>
+
+<!-- ============ GAMEPLAY HUD ============ -->
+<div id="hud" class="hidden">
+  <div id="damage-vignette"></div>
+
+  <div id="crosshair"><span></span><span></span><span></span><span></span></div>
+  <div id="hitmarker">✕</div>
+
+  <div id="hud-topleft" class="hud-panel">
+    <canvas id="minimap" width="150" height="150" aria-label="Minimap"></canvas>
+    <div id="debug-panel" class="hidden"></div>
+  </div>
+
+  <div id="hud-topcenter">
+    <div id="match-timer" class="hud-chip">0:00</div>
+    <div id="zone-banner" class="hud-chip">SAFE ZONE</div>
+  </div>
+
+  <div id="hud-topright">
+    <div class="hud-chip">👥 <span id="alive-count">6</span></div>
+    <div class="hud-chip">🎯 <span id="kill-count">0</span></div>
+    <button id="btn-pause" class="hud-btn small" aria-label="Pause game">⏸</button>
+  </div>
+
+  <div id="hud-bottomcenter">
+    <div id="health-wrap">
+      <div id="health-bar"><div id="health-fill"></div></div>
+      <span id="health-text">100</span>
+    </div>
+    <div id="weapon-info">
+      <span id="weapon-name">Pistol</span>
+      <span id="ammo-text">12 / 48</span>
+    </div>
+    <div id="reload-wrap" class="hidden"><div id="reload-fill"></div><span>RELOADING</span></div>
+    <div id="weapon-slots">
+      <button class="slot-btn" data-slot="0">1</button>
+      <button class="slot-btn" data-slot="1">2</button>
+      <button class="slot-btn" data-slot="2">3</button>
+    </div>
+  </div>
+
+  <div id="pickup-prompt" class="hidden">Pick up</div>
+  <button id="btn-interact" class="hud-btn hidden" aria-label="Pick up item">✋<small>PICK</small></button>
+
+  <!-- Touch controls -->
+  <div id="joy-zone" aria-label="Movement joystick">
+    <div id="joy-base"><div id="joy-knob"></div></div>
+  </div>
+  <div id="touch-buttons">
+    <button id="btn-fire" class="hud-btn fire" aria-label="Fire">🔥<small>FIRE</small></button>
+    <button id="btn-aim" class="hud-btn" aria-label="Aim">◎<small>AIM</small></button>
+    <button id="btn-jump" class="hud-btn" aria-label="Jump">⬆<small>JUMP</small></button>
+    <button id="btn-sprint" class="hud-btn toggle" aria-label="Toggle sprint">⚡<small>RUN</small></button>
+    <button id="btn-reload" class="hud-btn" aria-label="Reload">⟳<small>LOAD</small></button>
+  </div>
+
+  <div id="toast" class="hidden"></div>
+  <div id="countdown" class="hidden">3</div>
+</div>
+
+<div id="rotate-prompt" class="hidden">
+  <div>📱↻<br>Rotate your device to landscape for the best experience.<br><small>(You can still play in portrait.)</small></div>
+</div>
+
+<!-- ============ MAIN MENU ============ -->
+<section id="screen-menu" class="screen">
+  <div class="menu-box">
+    <h1 class="game-title">X <span>BATTLE ROYALE</span></h1>
+    <p class="tagline">Drop in. Loot up. Be the last soldier standing.</p>
+    <button id="btn-play" class="menu-btn primary">▶ &nbsp;PLAY</button>
+    <button id="btn-settings" class="menu-btn">⚙ &nbsp;SETTINGS</button>
+    <button id="btn-how" class="menu-btn">❓ &nbsp;HOW TO PLAY</button>
+    <p id="menu-stats" class="menu-stats"></p>
+    <p id="menu-model-status" class="menu-model-status">Loading world…</p>
+    <p class="credits">Offline prototype vs AI soldiers · Three.js · Built for low-end Android</p>
+  </div>
+</section>
+
+<!-- ============ HOW TO PLAY ============ -->
+<section id="screen-how" class="screen hidden">
+  <div class="menu-box wide">
+    <h2>HOW TO PLAY</h2>
+    <div class="how-grid">
+      <div><h3>🎯 Goal</h3><p>Eliminate all enemy soldiers and stay inside the shrinking safe zone. Last one alive wins.</p></div>
+      <div><h3>📱 Touch</h3><p>Left joystick to move · drag right side to look · FIRE / AIM / JUMP / RUN / LOAD buttons · tap ✋ to pick up weapons, ammo and medkits.</p></div>
+      <div><h3>⌨️ Desktop</h3><p>WASD move · mouse look (click game to lock mouse) · click = fire · right mouse = aim · Shift run · Space jump · R reload · 1/2/3 weapons · E pickup · Esc pause.</p></div>
+      <div><h3>🔫 Weapons</h3><p>You start with a pistol. Find the Assault Rifle and Shotgun at the village, outpost, warehouse and hilltop. Watch your ammo!</p></div>
+    </div>
+    <button class="menu-btn" data-back>← BACK</button>
+  </div>
+</section>
+
+<!-- ============ SETTINGS ============ -->
+<section id="screen-settings" class="screen hidden">
+  <div class="menu-box wide">
+    <h2>SETTINGS</h2>
+    <label class="setting-row"><span>Graphics quality</span>
+      <select id="set-quality">
+        <option value="low">Low (2 GB RAM phones)</option>
+        <option value="medium">Medium</option>
+        <option value="high">High</option>
+      </select>
+    </label>
+    <label class="setting-row"><span>Auto quality (drop resolution if slow)</span>
+      <input type="checkbox" id="set-autoquality">
+    </label>
+    <label class="setting-row"><span>Look sensitivity</span>
+      <input type="range" id="set-sensitivity" min="0.4" max="2.2" step="0.1">
+    </label>
+    <label class="setting-row"><span>Invert vertical look</span>
+      <input type="checkbox" id="set-inverty">
+    </label>
+    <label class="setting-row"><span>Sound effects</span>
+      <input type="checkbox" id="set-sound">
+    </label>
+    <label class="setting-row"><span>Volume</span>
+      <input type="range" id="set-volume" min="0" max="1" step="0.05">
+    </label>
+    <label class="setting-row"><span>Show FPS / debug panel</span>
+      <input type="checkbox" id="set-showfps">
+    </label>
+    <button class="menu-btn primary" id="btn-settings-save">✔ SAVE &amp; BACK</button>
+    <button class="menu-btn" data-back>← BACK</button>
+  </div>
+</section>
+
+<!-- ============ LOADING ============ -->
+<section id="screen-loading" class="screen hidden">
+  <div class="menu-box">
+    <h2>DEPLOYING…</h2>
+    <div class="loading-bar"><div id="loading-fill"></div></div>
+    <p id="loading-text">Building island…</p>
+  </div>
+</section>
+
+<!-- ============ PAUSE ============ -->
+<section id="screen-pause" class="screen hidden">
+  <div class="menu-box">
+    <h2>⏸ PAUSED</h2>
+    <button id="btn-resume" class="menu-btn primary">▶ RESUME</button>
+    <button id="btn-restart" class="menu-btn">↻ RESTART MATCH</button>
+    <button id="btn-pause-settings" class="menu-btn">⚙ SETTINGS</button>
+    <button id="btn-quit-menu" class="menu-btn danger">🏠 MAIN MENU</button>
+  </div>
+</section>
+
+<!-- ============ RESULT ============ -->
+<section id="screen-result" class="screen hidden">
+  <div class="menu-box">
+    <h2 id="result-title">🏆 WINNER!</h2>
+    <p id="result-subtitle"></p>
+    <div id="result-stats" class="result-stats"></div>
+    <button id="btn-play-again" class="menu-btn primary">↻ PLAY AGAIN</button>
+    <button id="btn-result-menu" class="menu-btn">🏠 MAIN MENU</button>
+  </div>
+</section>
+
+<!-- ============ ERROR ============ -->
+<section id="screen-error" class="screen hidden">
+  <div class="menu-box">
+    <h2>⚠️ SOMETHING WENT WRONG</h2>
+    <p id="error-text">Unknown error.</p>
+    <button class="menu-btn primary" onclick="location.reload()">↻ RELOAD GAME</button>
+  </div>
+</section>
+
+<noscript><div style="color:#fff;padding:2rem;font-family:sans-serif">X Battle Royale needs JavaScript enabled.</div></noscript>
+<script type="module" src="game.js"></script>
+</body>
+</html>

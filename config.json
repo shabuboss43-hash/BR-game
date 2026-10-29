@@ -1,0 +1,159 @@
+{
+  "game": {
+    "title": "X Battle Royale",
+    "version": "1.0.0",
+    "backendEnabled": false,
+    "backendBaseUrl": "backend/"
+  },
+  "world": {
+    "size": 500,
+    "playableRadius": 235,
+    "seed": 20261029,
+    "terrainSegments": 72,
+    "treeCount": 140,
+    "rockCount": 46,
+    "grassCount": 260
+  },
+  "graphics": {
+    "defaultPreset": "low",
+    "presets": {
+      "low":    { "resolutionScale": 0.65, "shadows": false, "maxParticles": 20, "vegetationFraction": 0.4,  "fogFar": 220, "antialias": false },
+      "medium": { "resolutionScale": 0.8,  "shadows": false, "maxParticles": 40, "vegetationFraction": 0.7,  "fogFar": 300, "antialias": false },
+      "high":   { "resolutionScale": 1.0,  "shadows": true,  "maxParticles": 70, "vegetationFraction": 1.0,  "fogFar": 420, "antialias": true }
+    }
+  },
+  "player": {
+    "maxHealth": 100,
+    "walkSpeed": 6.2,
+    "sprintSpeed": 9.5,
+    "aimSpeedMultiplier": 0.55,
+    "acceleration": 34,
+    "gravity": -24,
+    "jumpVelocity": 8.2,
+    "radius": 0.45,
+    "height": 1.8,
+    "spawn": { "x": 0, "z": 150 },
+    "modelPath": "assets/models/soldier.glb",
+    "startWeapon": "pistol"
+  },
+  "enemy": {
+    "count": 5,
+    "maxHealth": 100,
+    "walkSpeed": 4.6,
+    "chaseSpeed": 6.4,
+    "detectionRadius": 62,
+    "attackRange": 46,
+    "preferredRange": 24,
+    "aimErrorDegrees": 3.4,
+    "decisionInterval": 0.25,
+    "radius": 0.45,
+    "height": 1.8,
+    "modelPath": "assets/models/russian_soldier.glb",
+    "weaponPool": ["assault_rifle", "assault_rifle", "pistol", "shotgun"],
+    "spawns": [
+      { "x": -60, "z": -40 },
+      { "x": 120, "z": -110 },
+      { "x": -115, "z": 95 },
+      { "x": 90, "z": 70 },
+      { "x": -150, "z": -130 },
+      { "x": 160, "z": 130 },
+      { "x": 30, "z": -170 },
+      { "x": -40, "z": 190 }
+    ]
+  },
+  "teams": {
+    "player": "BLUE",
+    "enemy": "RED",
+    "friendlyFire": false,
+    "playerColor": "#2e7cf6",
+    "enemyColor": "#e33b3b"
+  },
+  "weapons": {
+    "assault_rifle": {
+      "id": "assault_rifle",
+      "name": "Assault Rifle",
+      "damage": 14,
+      "pellets": 1,
+      "magazineSize": 30,
+      "startReserve": 90,
+      "maxReserve": 240,
+      "reloadTime": 1.9,
+      "fireInterval": 0.105,
+      "automatic": true,
+      "range": 220,
+      "recoil": 0.011,
+      "spreadDegrees": 0.9,
+      "mode": "hitscan",
+      "sound": null
+    },
+    "pistol": {
+      "id": "pistol",
+      "name": "Pistol",
+      "damage": 11,
+      "pellets": 1,
+      "magazineSize": 12,
+      "startReserve": 48,
+      "maxReserve": 144,
+      "reloadTime": 1.3,
+      "fireInterval": 0.24,
+      "automatic": false,
+      "range": 130,
+      "recoil": 0.006,
+      "spreadDegrees": 0.6,
+      "mode": "hitscan",
+      "sound": null
+    },
+    "shotgun": {
+      "id": "shotgun",
+      "name": "Shotgun",
+      "damage": 9,
+      "pellets": 8,
+      "magazineSize": 6,
+      "startReserve": 24,
+      "maxReserve": 60,
+      "reloadTime": 2.4,
+      "fireInterval": 0.85,
+      "automatic": false,
+      "range": 70,
+      "recoil": 0.035,
+      "spreadDegrees": 4.5,
+      "mode": "hitscan",
+      "sound": null
+    }
+  },
+  "pickups": [
+    { "type": "weapon", "weaponId": "assault_rifle", "x": 8,    "z": 96 },
+    { "type": "weapon", "weaponId": "shotgun",       "x": -112, "z": 88 },
+    { "type": "weapon", "weaponId": "assault_rifle", "x": 122,  "z": -104 },
+    { "type": "weapon", "weaponId": "shotgun",       "x": 14,   "z": -14 },
+    { "type": "weapon", "weaponId": "pistol",        "x": -148, "z": -124 },
+    { "type": "ammo",   "weaponId": "assault_rifle", "amount": 60, "x": -18, "z": 22 },
+    { "type": "ammo",   "weaponId": "assault_rifle", "amount": 60, "x": 96,  "z": 64 },
+    { "type": "ammo",   "weaponId": "shotgun",       "amount": 12, "x": 30,  "z": -60 },
+    { "type": "ammo",   "weaponId": "pistol",        "amount": 36, "x": -70, "z": -30 },
+    { "type": "ammo",   "weaponId": "assault_rifle", "amount": 60, "x": 150, "z": -60 },
+    { "type": "health", "amount": 50, "x": 0,    "z": 0 },
+    { "type": "health", "amount": 50, "x": 118,  "z": -122 },
+    { "type": "health", "amount": 50, "x": -120, "z": 110 }
+  ],
+  "safeZone": {
+    "center": { "x": 0, "z": 0 },
+    "initialRadius": 240,
+    "damagePerSecond": 5,
+    "stages": [
+      { "delay": 25, "warning": 10, "shrinkTime": 45, "targetRadius": 130 },
+      { "delay": 15, "warning": 10, "shrinkTime": 40, "targetRadius": 65 },
+      { "delay": 12, "warning": 8,  "shrinkTime": 35, "targetRadius": 28 },
+      { "delay": 10, "warning": 8,  "shrinkTime": 30, "targetRadius": 10 }
+    ]
+  },
+  "audio": {
+    "enabled": true,
+    "volume": 0.7
+  },
+  "debug": {
+    "showFps": false,
+    "autoQuality": true,
+    "logModelInfo": true
+  }
+}
