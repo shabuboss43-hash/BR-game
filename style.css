@@ -1,0 +1,142 @@
+/* X Battle Royale — mobile-first HUD & menus (original dark military theme) */
+:root{
+  --accent:#ffb347; --accent2:#ff7847; --panel:rgba(13,18,26,.82);
+  --panel-light:rgba(22,30,42,.92); --text:#f2f5f8; --muted:#9fb0c0;
+  --blue:#2e7cf6; --red:#e33b3b; --green:#58c96b;
+  --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px);
+  --sal:env(safe-area-inset-left,0px); --sar:env(safe-area-inset-right,0px);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;height:100%;overflow:hidden;background:#10151c;color:var(--text);
+  font-family:"Segoe UI",Roboto,system-ui,-apple-system,sans-serif;touch-action:none;overscroll-behavior:none}
+.hidden{display:none!important}
+button{font-family:inherit;color:inherit}
+#game-container{position:fixed;inset:0;z-index:0}
+#game-container canvas{display:block}
+#look-area{position:fixed;top:0;right:0;width:58%;height:100%;z-index:3;touch-action:none}
+
+/* ---------- Screens / menus ---------- */
+.screen{position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;
+  padding:calc(12px + var(--sat)) calc(14px + var(--sar)) calc(12px + var(--sab)) calc(14px + var(--sal));
+  background:radial-gradient(ellipse at 50% 35%,rgba(10,14,20,.25),rgba(8,11,16,.78) 75%);overflow-y:auto}
+.menu-box{background:var(--panel);border:1px solid rgba(255,179,71,.35);border-radius:14px;
+  padding:22px 22px 16px;width:min(420px,94vw);text-align:center;box-shadow:0 14px 44px rgba(0,0,0,.55);backdrop-filter:blur(3px)}
+.menu-box.wide{width:min(620px,96vw);text-align:left}
+.menu-box h2{letter-spacing:.12em;margin-bottom:14px;text-align:center;font-size:clamp(18px,4.5vw,24px)}
+.game-title{font-size:clamp(38px,9vw,56px);font-weight:900;letter-spacing:.04em;line-height:1;
+  color:var(--accent);text-shadow:0 3px 0 #7a4d12,0 8px 22px rgba(0,0,0,.6)}
+.game-title span{display:block;font-size:.48em;color:#fff;letter-spacing:.34em;margin-top:4px}
+.tagline{color:var(--muted);margin:10px 0 18px;font-size:14px}
+.menu-btn{display:block;width:100%;margin:8px 0;padding:14px 12px;font-size:16px;font-weight:700;letter-spacing:.06em;
+  background:#232f42;border:1px solid #3a4d6e;border-radius:10px;cursor:pointer;min-height:50px}
+.menu-btn:active{transform:scale(.985);background:#2d3e59}
+.menu-btn.primary{background:linear-gradient(180deg,#f5a83d,#e07f2e);border-color:#ffcf87;color:#191104}
+.menu-btn.danger{border-color:#7c3a3a;background:#3a2326}
+.menu-stats,.credits,.menu-model-status{color:var(--muted);font-size:12px;margin-top:10px;line-height:1.5}
+.menu-model-status{color:#7fb2e8}
+.how-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px}
+.how-grid h3{font-size:14px;margin-bottom:4px;color:var(--accent)}
+.how-grid p{font-size:13px;color:#cdd8e4;line-height:1.45}
+.setting-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:10px 2px;border-bottom:1px solid rgba(255,255,255,.06);font-size:14px}
+.setting-row select{background:#1c2739;color:#fff;border:1px solid #3a4d6e;border-radius:8px;padding:8px;max-width:55%}
+.setting-row input[type=range]{width:46%;accent-color:var(--accent)}
+.setting-row input[type=checkbox]{width:24px;height:24px;accent-color:var(--accent)}
+.loading-bar{height:14px;background:#1b2536;border-radius:8px;overflow:hidden;margin:12px 0}
+#loading-fill{height:100%;width:5%;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .25s}
+.result-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 0}
+.result-stats div{background:#1b2536;border-radius:10px;padding:10px}
+.result-stats b{display:block;font-size:20px;color:var(--accent)}
+.result-stats span{font-size:11px;color:var(--muted);letter-spacing:.08em}
+
+/* ---------- HUD ---------- */
+#hud{position:fixed;inset:0;z-index:10;pointer-events:none}
+#hud button{pointer-events:auto}
+.hud-panel{background:var(--panel);border:1px solid rgba(255,255,255,.14);border-radius:10px}
+.hud-chip{background:var(--panel);border:1px solid rgba(255,255,255,.14);border-radius:999px;
+  padding:5px 12px;font-size:13px;font-weight:700;white-space:nowrap}
+#hud-topleft{position:absolute;top:calc(8px + var(--sat));left:calc(8px + var(--sal));padding:5px}
+#minimap{display:block;width:clamp(92px,17vmin,150px);height:clamp(92px,17vmin,150px);border-radius:6px}
+#debug-panel{font:11px/1.5 monospace;color:#8ef0a0;padding:5px 4px 1px;white-space:pre-line;max-width:170px}
+#hud-topcenter{position:absolute;top:calc(8px + var(--sat));left:50%;transform:translateX(-50%);
+  display:flex;flex-direction:column;align-items:center;gap:5px}
+#zone-banner.warn{background:rgba(120,20,20,.88);border-color:#ff7b7b;color:#ffe1e1}
+#zone-banner.shrink{background:rgba(122,74,10,.9);border-color:var(--accent)}
+#hud-topright{position:absolute;top:calc(8px + var(--sat));right:calc(8px + var(--sar));display:flex;gap:6px;align-items:center}
+#hud-bottomcenter{position:absolute;bottom:calc(10px + var(--sab));left:50%;transform:translateX(-50%);
+  width:min(300px,42vw);text-align:center}
+#health-wrap{display:flex;align-items:center;gap:8px;background:var(--panel);border-radius:999px;padding:5px 10px;border:1px solid rgba(255,255,255,.14)}
+#health-bar{flex:1;height:13px;background:#223047;border-radius:8px;overflow:hidden}
+#health-fill{height:100%;width:100%;background:linear-gradient(90deg,#3fae55,#6fe08a);transition:width .18s}
+#health-fill.low{background:linear-gradient(90deg,#c0392b,#ff6b5e)}
+#health-text{font-weight:800;font-size:14px;min-width:30px}
+#weapon-info{display:flex;justify-content:space-between;margin-top:6px;background:var(--panel);
+  border:1px solid rgba(255,255,255,.14);border-radius:10px;padding:6px 11px;font-weight:700;font-size:14px}
+#ammo-text{color:var(--accent);font-size:17px}
+#ammo-text.empty{color:#ff6b5e}
+#reload-wrap{position:relative;height:16px;margin-top:5px;background:#223047;border-radius:8px;overflow:hidden}
+#reload-fill{height:100%;width:0%;background:var(--accent)}
+#reload-wrap span{position:absolute;inset:0;font-size:10px;font-weight:800;letter-spacing:.14em;line-height:16px}
+#weapon-slots{display:flex;gap:6px;justify-content:center;margin-top:6px}
+.slot-btn{pointer-events:auto;width:46px;height:34px;border-radius:8px;background:var(--panel);
+  border:1px solid rgba(255,255,255,.2);font-weight:800;font-size:11px;cursor:pointer}
+.slot-btn.active{border-color:var(--accent);color:var(--accent)}
+.slot-btn.locked{opacity:.32}
+#crosshair{position:absolute;left:50%;top:50%;width:26px;height:26px;transform:translate(-50%,-50%)}
+#crosshair span{position:absolute;background:rgba(255,255,255,.92);box-shadow:0 0 3px #000}
+#crosshair span:nth-child(1){left:12px;top:0;width:2px;height:8px}
+#crosshair span:nth-child(2){left:12px;bottom:0;width:2px;height:8px}
+#crosshair span:nth-child(3){left:0;top:12px;width:8px;height:2px}
+#crosshair span:nth-child(4){right:0;top:12px;width:8px;height:2px}
+#hitmarker{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);color:#ffd27a;
+  font-size:26px;font-weight:900;opacity:0;text-shadow:0 0 6px #000}
+#hitmarker.show{opacity:1}
+#hitmarker.kill{color:#ff5e5e}
+#damage-vignette{position:absolute;inset:0;pointer-events:none;opacity:0;
+  background:radial-gradient(ellipse at center,transparent 52%,rgba(200,20,20,.55) 100%)}
+#damage-vignette.show{opacity:1;transition:opacity .05s}
+#damage-vignette.fade{transition:opacity .7s}
+#pickup-prompt{position:absolute;left:50%;bottom:26%;transform:translateX(-50%);background:var(--panel-light);
+  border:1px solid var(--accent);color:#ffe2b0;border-radius:999px;padding:7px 16px;font-size:14px;font-weight:700}
+#toast{position:absolute;left:50%;top:19%;transform:translateX(-50%);background:var(--panel-light);
+  border:1px solid rgba(255,179,71,.6);border-radius:10px;padding:9px 18px;font-weight:700;font-size:15px;text-align:center;max-width:86vw}
+#countdown{position:absolute;left:50%;top:36%;transform:translate(-50%,-50%);font-size:clamp(52px,14vmin,96px);
+  font-weight:900;color:var(--accent);text-shadow:0 6px 24px #000}
+
+/* ---------- Touch controls ---------- */
+#joy-zone{position:absolute;left:calc(6px + var(--sal));bottom:calc(14px + var(--sab));width:168px;height:168px;pointer-events:auto;touch-action:none}
+#joy-base{position:absolute;left:24px;bottom:18px;width:118px;height:118px;border-radius:50%;
+  background:rgba(16,22,32,.5);border:2px solid rgba(255,255,255,.28)}
+#joy-knob{position:absolute;left:50%;top:50%;width:52px;height:52px;border-radius:50%;
+  background:rgba(255,179,71,.85);border:2px solid #ffe2b0;transform:translate(-50%,-50%)}
+#touch-buttons{position:absolute;right:calc(8px + var(--sar));bottom:calc(12px + var(--sab));width:196px;height:212px}
+.hud-btn{position:absolute;width:64px;height:64px;border-radius:50%;background:rgba(16,22,32,.62);
+  border:2px solid rgba(255,255,255,.35);font-size:21px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;touch-action:none}
+.hud-btn small{font-size:9px;font-weight:800;letter-spacing:.08em}
+.hud-btn.active{background:rgba(255,179,71,.75);color:#1a1206;border-color:#ffe2b0}
+.hud-btn.small{position:static;width:40px;height:40px;font-size:17px;border-radius:10px}
+#btn-fire{right:8px;bottom:64px;width:84px;height:84px;font-size:27px;background:rgba(140,32,24,.66);border-color:#ff9a8a}
+#btn-fire.active{background:rgba(230,70,45,.9);color:#fff}
+#btn-aim{right:106px;bottom:96px}
+#btn-jump{right:14px;bottom:162px}
+#btn-sprint{right:108px;bottom:18px}
+#btn-reload{right:24px;bottom:0;width:56px;height:56px}
+#btn-interact{right:calc(112px + var(--sar));bottom:calc(168px + var(--sab))}
+
+#rotate-prompt{position:fixed;left:50%;bottom:calc(16px + var(--sab));transform:translateX(-50%);z-index:30;
+  background:var(--panel-light);border:1px solid var(--accent);border-radius:12px;padding:12px 18px;text-align:center;font-size:14px;max-width:88vw}
+
+/* Portrait: compact HUD (game still playable; prompt suggests landscape) */
+@media (orientation:portrait){
+  #hud-bottomcenter{width:min(270px,58vw);bottom:calc(150px + var(--sab))}
+  #minimap{width:84px;height:84px}
+  #joy-zone{width:150px;height:150px}
+  #joy-base{width:104px;height:104px}
+  #touch-buttons{width:176px;height:196px}
+  .how-grid{grid-template-columns:1fr}
+}
+@media (max-height:430px) and (orientation:landscape){
+  #joy-zone{width:140px;height:140px}#joy-base{width:98px;height:98px;left:18px;bottom:10px}
+  #touch-buttons{transform:scale(.86);transform-origin:bottom right}
+  #minimap{width:88px;height:88px}
+  .menu-box{padding:14px 18px 10px}.menu-btn{padding:10px;min-height:42px}
+}

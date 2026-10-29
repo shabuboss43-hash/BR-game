@@ -1,0 +1,14 @@
+{
+  "name": "x-battle-royale",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "X Battle Royale - compact third-person 3D battle royale prototype for low-end Android (Three.js)",
+  "scripts": {
+    "start": "python3 -m http.server 8000 --bind 0.0.0.0",
+    "test": "node --experimental-vm-modules tests/syntax-check.mjs && node tests/config-validation.js && node tests/logic-tests.mjs && node tests/integration-tests.mjs"
+  },
+  "devDependencies": {
+    "three": "0.160.0"
+  }
+}
