@@ -32,6 +32,15 @@ on the same Wi-Fi), or enable GitHub Pages on this repo and play online.
 
 Tap **PLAY** → 3-2-1 countdown → survive.
 
+## 📱 Android APK (Android 10+)
+
+An installable APK is built automatically in the cloud on every relevant
+change (**Actions → Build Android APK**) and published on the
+[Releases](https://github.com/shabuboss43-hash/BR-game/releases) page.
+Download `X-Battle-Royale-Android10.apk`, tap it on your phone, allow
+"install from this source", and play — fully offline, models included.
+Details: [ANDROID.md](ANDROID.md).
+
 ### Controls
 
 | Action | Mobile (touch) | Desktop |

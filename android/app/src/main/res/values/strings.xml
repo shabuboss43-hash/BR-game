@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">X Battle Royale</string>
+    <string name="title_activity_main">X Battle Royale</string>
+    <string name="package_name">com.shabuboss.xbattleroyale</string>
+    <string name="custom_url_scheme">com.shabuboss.xbattleroyale</string>
+</resources>

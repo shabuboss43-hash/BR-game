@@ -6,9 +6,18 @@
   "description": "X Battle Royale - compact third-person 3D battle royale prototype for low-end Android (Three.js)",
   "scripts": {
     "start": "python3 -m http.server 8000 --bind 0.0.0.0",
-    "test": "node --experimental-vm-modules tests/syntax-check.mjs && node tests/config-validation.js && node tests/logic-tests.mjs && node tests/integration-tests.mjs"
+    "test": "node --experimental-vm-modules tests/syntax-check.mjs && node tests/config-validation.js && node tests/logic-tests.mjs && node tests/integration-tests.mjs",
+    "build:www": "node scripts/build-www.mjs",
+    "android:sync": "npm run build:www && npx cap sync android",
+    "android:apk": "npm run android:sync && cd android && ./gradlew assembleDebug"
   },
   "devDependencies": {
+    "@capacitor/cli": "^6.2.3",
+    "esbuild": "^0.24.2",
     "three": "0.160.0"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.2.3",
+    "@capacitor/core": "^6.2.3"
   }
 }

@@ -1,0 +1,11 @@
+{
+  "appId": "com.shabuboss.xbattleroyale",
+  "appName": "X Battle Royale",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": false
+  }
+}
