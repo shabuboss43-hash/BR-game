@@ -1,0 +1,79 @@
+name: Build Android APK
+
+# Builds an installable debug APK in the cloud (no local Android SDK needed).
+# Works on Android 10 (API 29) and newer; minSdk 24 also covers older phones.
+on:
+  push:
+    branches:
+      - main
+      - arena/e12b2d95-br-game
+    paths:
+      - 'android/**'
+      - 'src/**'
+      - 'assets/**'
+      - 'index.html'
+      - 'style.css'
+      - 'game.js'
+      - 'config.json'
+      - 'capacitor.config.json'
+      - 'scripts/build-www.mjs'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/build-apk.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Set up Java 17 (Android Gradle Plugin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install SDK platform 34
+        run: sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+
+      - name: Install npm dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Build web bundle and sync into Android project
+        run: |
+          npm run build:www
+          npx cap sync android
+
+      - name: Build debug APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Rename APK
+        run: |
+          cp android/app/build/outputs/apk/debug/app-debug.apk X-Battle-Royale-Android10.apk
+          ls -lh X-Battle-Royale-Android10.apk
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: X-Battle-Royale-Android10-APK
+          path: X-Battle-Royale-Android10.apk
+          if-no-files-found: error
+          retention-days: 90
