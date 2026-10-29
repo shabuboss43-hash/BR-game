@@ -23,7 +23,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write # to publish the APK to the rolling "android-apk" release
 
 jobs:
   build-apk:
@@ -81,3 +81,15 @@ jobs:
           path: X-Battle-Royale-Android10.apk
           if-no-files-found: error
           retention-days: 90
+
+      - name: Publish APK to GitHub Releases (rolling "android-apk" release)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          NOTES="Installable debug APK for Android 10 and newer (minSdk 24). Download X-Battle-Royale-Android10.apk, tap it on your phone, allow 'install from this source', then play — fully offline, soldier models included. Rebuilt automatically on every game/Android change; this release always holds the newest build."
+          if gh release view android-apk > /dev/null 2>&1; then
+            gh release edit android-apk --title "X Battle Royale — Android APK (latest)" --notes "$NOTES" --prerelease
+          else
+            gh release create android-apk --title "X Battle Royale — Android APK (latest)" --notes "$NOTES" --prerelease --target "$GITHUB_SHA"
+          fi
+          gh release upload android-apk X-Battle-Royale-Android10.apk --clobber
