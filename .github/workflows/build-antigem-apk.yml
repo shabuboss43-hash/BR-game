@@ -135,6 +135,19 @@ jobs:
           fi
           ls -lh out
 
+      # Prints the important facts (package, minSdk, signature) as run
+      # annotations, so the build result is verifiable without downloading.
+      - name: Verify APKs (badging + signature)
+        run: |
+          BUILD_TOOLS="$(ls -d "${ANDROID_HOME}"/build-tools/36.0.0)"
+          for apk in out/*.apk; do
+            LINE="$( "$BUILD_TOOLS/aapt2" dump badging "$apk" 2>/dev/null | head -1 )"
+            SDK="$( "$BUILD_TOOLS/aapt2" dump badging "$apk" 2>/dev/null | grep -E '^sdkVersion|^targetSdkVersion' | tr '\n' ' ' )"
+            CERT="$( "$BUILD_TOOLS/apksigner" verify --print-certs "$apk" 2>/dev/null | grep -E 'certificate DN|SHA-256 digest' | head -2 | tr '\n' ' ' )"
+            SUM="$(sha256sum "$apk" | cut -d' ' -f1)"
+            echo "::notice title=$(basename "$apk")::$LINE | $SDK | $CERT | sha256=$SUM | size=$(stat -c%s "$apk")"
+          done
+
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v4
         with:

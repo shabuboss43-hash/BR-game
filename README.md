@@ -41,6 +41,25 @@ Download `X-Battle-Royale-Android10.apk`, tap it on your phone, allow
 "install from this source", and play — fully offline, models included.
 Details: [ANDROID.md](ANDROID.md).
 
+## 🔗 Linked project — antiGem (Android 10 APK)
+
+This repo also builds an Android 10 APK for the linked project
+**[antiGem](https://github.com/Santoshkurmi/antigem)** (`Santoshkurmi/antigem`) —
+a mobile IDE that wraps the Antigravity CLI (Gemini) and the Claude CLI with a
+code editor, AI chat, Git client and full Termux terminal.
+
+- **APK:** [`antiGem-termux-v1.0.17-android10.apk`](https://github.com/shabuboss43-hash/BR-game/releases/download/antigem-apk/antiGem-termux-v1.0.17-android10.apk)
+  · also `antiGem-standard-v1.0.17-android10.apk` on the
+  [antigem-apk release](https://github.com/shabuboss43-hash/BR-game/releases/tag/antigem-apk)
+- Built straight from the upstream tag `v1.0.17` by
+  [`.github/workflows/build-antigem-apk.yml`](.github/workflows/build-antigem-apk.yml)
+  (daily check for a newer upstream tag; run it manually with any tag/branch).
+- minSdk 24 / targetSdk 28, so **Android 10 (API 29) is supported**, and it is
+  release-mode (minified + resource-shrunk) and signed with a stable key of this
+  repo, so newer builds install over older ones.
+- `termux` flavor = package `com.termux`, `standard` flavor = package
+  `com.antigem` (per upstream's flavor design); install either, or both.
+
 ### Controls
 
 | Action | Mobile (touch) | Desktop |
