@@ -79,9 +79,12 @@ jobs:
       # display name changes — package ids, signature and updates are untouched.
       - name: Brand as "antigem"
         run: |
-          FILE=src/app/src/main/res/values/strings.xml
-          sed -i '0,/<string name="app_name">[^<]*<\/string>/s//<string name="app_name">antigem<\/string>/' "$FILE"
-          grep -n 'app_name' "$FILE"
+          # app_name is defined in main/ and overridden per flavor (termux/),
+          # so every copy has to be patched or the termux APK keeps "AntiGem".
+          for f in $(grep -rl '<string name="app_name">' src/app/src --include=strings.xml); do
+            sed -i 's#<string name="app_name">[^<]*</string>#<string name="app_name">antigem</string>#' "$f"
+            echo "--- $f"; grep 'app_name' "$f"
+          done
 
       - name: Set up Java 21
         uses: actions/setup-java@v4
@@ -166,19 +169,49 @@ jobs:
           if-no-files-found: error
           retention-days: 90
 
-      - name: Publish to rolling "antigem-apk" release
+      - name: Ensure rolling "antigem-apk" release exists
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          NOTES="# antigem ${{ env.VERSION }} (Android 10)
-          Built from https://github.com/Santoshkurmi/antigem at tag ${{ steps.up.outputs.ref }} — upstream's app name is AntiGem; the launcher label in these APKs is \`antigem\`.
-          Mobile IDE wrapping the Antigravity CLI (Gemini) and Claude CLI with a code editor, AI chat, Git client and Termux terminal.
-          Installable release APK, minSdk 24 — works on Android 10 (API 29) and newer. Signed with this repo's own stable key, so updates install over older builds.
-          \`antigem-v${VERSION}-android10.apk\` = package \`com.termux\` (standalone, recommended — no separate Termux needed).
-          \`antigem-standard-v${VERSION}-android10.apk\` = package \`com.antigem\` (needs the Termux app + bridge)."
-          if gh release view antigem-apk > /dev/null 2>&1; then
-            gh release edit antigem-apk --title "antigem — Android 10 APK (latest)" --notes "$NOTES" --prerelease
-          else
-            gh release create antigem-apk --title "antigem — Android 10 APK (latest)" --notes "$NOTES" --prerelease --target "$GITHUB_SHA"
-          fi
-          gh release upload antigem-apk out/*.apk --clobber
+          gh release view antigem-apk > /dev/null 2>&1 || \
+            gh release create antigem-apk --title "antigem — Android 10 APK (latest)" \
+              --notes "Installable antigem APKs for Android 10+." --prerelease --target "$GITHUB_SHA"
+
+      - name: Update release title and notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ env.VERSION }}
+          REF: ${{ steps.up.outputs.ref }}
+        run: |
+          cat > notes.md <<EON
+          # antigem ${VERSION} (Android 10)
+
+          Built from https://github.com/Santoshkurmi/antigem at tag ${REF}. Upstream's app name is AntiGem; these APKs are labelled **antigem** and install as that name.
+
+          A mobile IDE that wraps the Antigravity CLI (Gemini) and the Claude CLI with a code editor, AI chat, git client and a full Termux terminal.
+
+          - **Android 10: yes** — minSdk 24, targetSdk 28, so API 29 is supported (and newer).
+          - Release-mode build (minified + resource-shrunk), signed with this build's stable key, so newer builds install over older ones.
+          - \`antigem-${VERSION}-android10.apk\` = package \`com.termux\`, standalone (recommended — no separate Termux needed).
+          - \`antigem-standard-${VERSION}-android10.apk\` = package \`com.antigem\`, needs the Termux app plus the bridge.
+          - No AI model is bundled: the app signs in to Google Antigravity (Gemini models, e.g. \`gemini-3.7-flash-high\`) and/or Claude Code over OAuth at runtime.
+          EON
+          sed -i 's/^          //' notes.md
+          head -3 notes.md
+          gh release edit antigem-apk --title "antigem — Android 10 APK (latest)" \
+            --notes-file notes.md --prerelease
+
+      - name: Upload APKs to release (with retries)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for attempt in 1 2 3 4 5; do
+            if gh release upload antigem-apk out/*.apk --clobber; then
+              echo "::notice title=upload::APKs published on attempt $attempt"
+              exit 0
+            fi
+            echo "::warning::upload attempt $attempt failed; retrying in 20s"
+            sleep 20
+          done
+          echo "::error::could not upload APKs to the release"
+          exit 1
