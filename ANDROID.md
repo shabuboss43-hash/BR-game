@@ -53,6 +53,9 @@ npm run android:apk
 - This is a **debug-signed** APK: perfect for installing on your own
   phone and sharing directly. For Google Play you would need a signed
   release AAB with your own keystore (never commit keystores to git).
+- The workflow caches the debug keystore between runs, so new builds
+  install **over** an older copy. Only APKs built before that change need
+  a one-time uninstall if Android says "App not installed".
 - APK size is mostly the two soldier models (~22 MB of textures).
   Compressing their textures would shrink the APK and load times.
 - If the game ever opens to a white screen and stays there, update

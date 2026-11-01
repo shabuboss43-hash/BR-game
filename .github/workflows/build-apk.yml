@@ -6,7 +6,7 @@ on:
   push:
     branches:
       - main
-      - arena/e12b2d95-br-game
+      - 'arena/**'
     paths:
       - 'android/**'
       - 'src/**'
@@ -62,6 +62,15 @@ jobs:
         run: |
           npm run build:www
           npx cap sync android
+
+      # Keeps the same debug signing key between runs, so a freshly built
+      # APK installs *over* an older one instead of failing with
+      # "App not installed" (signature mismatch).
+      - name: Restore stable debug keystore
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: android-debug-keystore-v1
 
       - name: Build debug APK
         working-directory: android

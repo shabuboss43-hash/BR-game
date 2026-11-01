@@ -1,0 +1,217 @@
+name: Build Antigem APK
+
+# Builds an installable APK of the linked project
+# https://github.com/Santoshkurmi/antigem (antiGem — mobile IDE for Antigravity
+# CLI / Claude CLI) straight from its source tag, and publishes it to the
+# rolling "antigem-apk" release of THIS repo so it can be downloaded on a phone.
+#
+# Upstream ships release APKs signed with a keystore that only exists in its own
+# repo secrets, so this workflow signs with a keystore generated here
+# (app/release.jks, quoted in antigem's build.gradle.kts as 123456/antigem).
+# The result is a fully working release-mode APK with a stable key of its own:
+# new builds install over old ones.
+#
+# antigem: minSdk 24, targetSdk 28  ->  runs on Android 10 (API 29) and older/newer.
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Git tag/branch of Santoshkurmi/antigem to build'
+        required: true
+        default: 'v1.0.17'
+  schedule:
+    - cron: '0 4 * * *' # daily check for a newer upstream tag
+  push:
+    branches:
+      - main
+      - 'arena/**'
+    paths:
+      - '.github/workflows/build-antigem-apk.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: antigem-apk
+  cancel-in-progress: true
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout this repo
+        uses: actions/checkout@v4
+
+      - name: Resolve upstream ref (latest tag unless pinned by input)
+        id: up
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -o pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.ref }}" ]; then
+            REF="${{ github.event.inputs.ref }}"
+          else
+            REF=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" \
+              "https://api.github.com/repos/Santoshkurmi/antigem/tags?per_page=100" \
+              | python3 -c "import json,sys;print(json.load(sys.stdin)[0]['name'])")
+          fi
+          echo "ref=$REF" >> "$GITHUB_OUTPUT"
+          echo "Building Santoshkurmi/antigem @ $REF"
+
+      # Downloads the upstream source tarball instead of `git clone`, so no git
+      # credentials from this repo are involved (they are scoped to this repo).
+      - name: Download upstream source (pinned tag)
+        env:
+          REF: ${{ steps.up.outputs.ref }}
+        run: |
+          set -o pipefail
+          curl -fsSL -o antigem-src.tar.gz \
+            "https://codeload.github.com/Santoshkurmi/antigem/tar.gz/refs/tags/$REF" \
+            || curl -fsSL -o antigem-src.tar.gz \
+                 "https://codeload.github.com/Santoshkurmi/antigem/tar.gz/refs/heads/$REF"
+          ls -lh antigem-src.tar.gz
+          mkdir -p src && tar xzf antigem-src.tar.gz -C src --strip-components=1
+          cat src/version.json
+
+      # The app is published here under the name "antigem": the launcher label
+      # in the APK is set to `antigem` (upstream ships "AntiGem"). Only the
+      # display name changes — package ids, signature and updates are untouched.
+      - name: Brand as "antigem"
+        run: |
+          # app_name is defined in main/ and overridden per flavor (termux/),
+          # so every copy has to be patched or the termux APK keeps "AntiGem".
+          for f in $(grep -rl '<string name="app_name">' src/app/src --include=strings.xml); do
+            sed -i 's#<string name="app_name">[^<]*</string>#<string name="app_name">antigem</string>#' "$f"
+            echo "--- $f"; grep 'app_name' "$f"
+          done
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Set up Gradle cache
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Install Android SDK platform 36 + build-tools
+        run: |
+          SDK="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
+          echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
+          SDKMANAGER="$(find "$SDK" -name sdkmanager -maxdepth 5 | head -1)"
+          echo "sdkmanager: $SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses > /dev/null || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+
+      # Stable signing key, generated once and reused for every later run.
+      - name: Restore or create release keystore
+        id: ks
+        uses: actions/cache@v4
+        with:
+          path: ~/.antigem/release.jks
+          key: antigem-release-keystore-v1
+
+      - name: Install keystore into the project
+        run: |
+          mkdir -p ~/.antigem
+          if [ ! -f ~/.antigem/release.jks ]; then
+            keytool -genkeypair -v -keystore ~/.antigem/release.jks \
+              -alias antigem -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass 123456 -keypass 123456 \
+              -dname "CN=antiGem, OU=Android, O=antiGem, L=NA, S=NA, C=IN"
+          fi
+          cp ~/.antigem/release.jks src/app/release.jks
+          ls -l src/app/release.jks
+
+      - name: Build release APKs (termux required, standard best-effort)
+        working-directory: src
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon :app:assembleTermuxRelease --stacktrace
+          ./gradlew --no-daemon :app:assembleStandardRelease --stacktrace \
+            || echo "::warning::standard flavor failed to build; shipping termux flavor only"
+
+      - name: Collect artifacts
+        run: |
+          VERSION=$(python3 -c "import json;print(json.load(open('src/version.json'))['version_name'])")
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          mkdir -p out
+          termux=$(find src/app/build/outputs/apk/termux/release -name '*.apk' | head -1)
+          cp "$termux" "out/antigem-v${VERSION}-android10.apk"
+          echo "ANTIGEM_TERMUX=out/antigem-v${VERSION}-android10.apk" >> "$GITHUB_ENV"
+          standard=$(find src/app/build/outputs/apk/standard/release -name '*.apk' 2>/dev/null | head -1 || true)
+          if [ -n "$standard" ]; then
+            cp "$standard" "out/antigem-standard-v${VERSION}-android10.apk"
+            echo "ANTIGEM_STANDARD=out/antigem-standard-v${VERSION}-android10.apk" >> "$GITHUB_ENV"
+          fi
+          ls -lh out
+
+      # Prints the important facts (package, minSdk, signature) as run
+      # annotations, so the build result is verifiable without downloading.
+      - name: Verify APKs (badging + signature)
+        run: |
+          BUILD_TOOLS="$(ls -d "${ANDROID_HOME}"/build-tools/36.0.0)"
+          for apk in out/*.apk; do
+            LINE="$( "$BUILD_TOOLS/aapt2" dump badging "$apk" 2>/dev/null | head -1 )"
+            SDK="$( "$BUILD_TOOLS/aapt2" dump badging "$apk" 2>/dev/null | grep -E '^sdkVersion|^targetSdkVersion' | tr '\n' ' ' )"
+            LABEL="$( "$BUILD_TOOLS/aapt2" dump badging "$apk" 2>/dev/null | grep -E '^application-label:' | tr '\n' ' ' )"
+            CERT="$( "$BUILD_TOOLS/apksigner" verify --print-certs "$apk" 2>/dev/null | grep -E 'certificate DN|SHA-256 digest' | head -2 | tr '\n' ' ' )"
+            SUM="$(sha256sum "$apk" | cut -d' ' -f1)"
+            echo "::notice title=$(basename "$apk")::$LABEL | $LINE | $SDK | $CERT | sha256=$SUM | size=$(stat -c%s "$apk")"
+          done
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: antigem-apk-${{ env.VERSION }}
+          path: out/*.apk
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Ensure rolling "antigem-apk" release exists
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view antigem-apk > /dev/null 2>&1 || \
+            gh release create antigem-apk --title "antigem — Android 10 APK (latest)" \
+              --notes "Installable antigem APKs for Android 10+." --prerelease --target "$GITHUB_SHA"
+
+      - name: Update release title and notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ env.VERSION }}
+          REF: ${{ steps.up.outputs.ref }}
+        run: |
+          cat > notes.md <<EON
+          # antigem ${VERSION} (Android 10)
+
+          Built from https://github.com/Santoshkurmi/antigem at tag ${REF}. Upstream's app name is AntiGem; these APKs are labelled **antigem** and install as that name.
+
+          A mobile IDE that wraps the Antigravity CLI (Gemini) and the Claude CLI with a code editor, AI chat, git client and a full Termux terminal.
+
+          - **Android 10: yes** — minSdk 24, targetSdk 28, so API 29 is supported (and newer).
+          - Release-mode build (minified + resource-shrunk), signed with this build's stable key, so newer builds install over older ones.
+          - \`antigem-${VERSION}-android10.apk\` = package \`com.termux\`, standalone (recommended — no separate Termux needed).
+          - \`antigem-standard-${VERSION}-android10.apk\` = package \`com.antigem\`, needs the Termux app plus the bridge.
+          - No AI model is bundled: the app signs in to Google Antigravity (Gemini models, e.g. \`gemini-3.7-flash-high\`) and/or Claude Code over OAuth at runtime.
+          EON
+          sed -i 's/^          //' notes.md
+          head -3 notes.md
+          gh release edit antigem-apk --title "antigem — Android 10 APK (latest)" \
+            --notes-file notes.md --prerelease
+
+      - name: Upload APKs to release (with retries)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for attempt in 1 2 3 4 5; do
+            if gh release upload antigem-apk out/*.apk --clobber; then
+              echo "::notice title=upload::APKs published on attempt $attempt"
+              exit 0
+            fi
+            echo "::warning::upload attempt $attempt failed; retrying in 20s"
+            sleep 20
+          done
+          echo "::error::could not upload APKs to the release"
+          exit 1
