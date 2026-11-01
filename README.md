@@ -49,11 +49,11 @@ a mobile IDE that wraps the Antigravity CLI (Gemini) and the Claude CLI with a
 code editor, AI chat, built-in Git client and a full Termux terminal. These APKs
 carry the launcher label **antigem**.
 
-- **APK:** [`antigem-v1.0.17-android10.apk`](https://github.com/shabuboss43-hash/BR-game/releases/download/antigem-apk/antigem-v1.0.17-android10.apk)
+- **APK:** [`antigem-v1.0.18-android10.apk`](https://github.com/shabuboss43-hash/BR-game/releases/download/antigem-apk/antigem-v1.0.18-android10.apk)
   (package `com.termux`, standalone — recommended) · also
-  `antigem-standard-v1.0.17-android10.apk` (package `com.antigem`) on the
+  `antigem-standard-v1.0.18-android10.apk` (package `com.antigem`) on the
   [antigem-apk release](https://github.com/shabuboss43-hash/BR-game/releases/tag/antigem-apk)
-- Built straight from upstream tag `v1.0.17` by
+- Built straight from upstream tag `v1.0.18` by
   [`.github/workflows/build-antigem-apk.yml`](.github/workflows/build-antigem-apk.yml)
   (daily check for a newer upstream tag; manual runs accept any tag/branch).
 - **Android 10: yes.** minSdk 24, targetSdk 28 → runs on Android 10 (API 29)
