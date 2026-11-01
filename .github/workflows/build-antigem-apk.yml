@@ -74,6 +74,15 @@ jobs:
           mkdir -p src && tar xzf antigem-src.tar.gz -C src --strip-components=1
           cat src/version.json
 
+      # The app is published here under the name "antigem": the launcher label
+      # in the APK is set to `antigem` (upstream ships "AntiGem"). Only the
+      # display name changes — package ids, signature and updates are untouched.
+      - name: Brand as "antigem"
+        run: |
+          FILE=src/app/src/main/res/values/strings.xml
+          sed -i '0,/<string name="app_name">[^<]*<\/string>/s//<string name="app_name">antigem<\/string>/' "$FILE"
+          grep -n 'app_name' "$FILE"
+
       - name: Set up Java 21
         uses: actions/setup-java@v4
         with:
@@ -126,12 +135,12 @@ jobs:
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
           mkdir -p out
           termux=$(find src/app/build/outputs/apk/termux/release -name '*.apk' | head -1)
-          cp "$termux" "out/antiGem-termux-v${VERSION}-android10.apk"
-          echo "ANTIGEM_TERMUX=out/antiGem-termux-v${VERSION}-android10.apk" >> "$GITHUB_ENV"
+          cp "$termux" "out/antigem-v${VERSION}-android10.apk"
+          echo "ANTIGEM_TERMUX=out/antigem-v${VERSION}-android10.apk" >> "$GITHUB_ENV"
           standard=$(find src/app/build/outputs/apk/standard/release -name '*.apk' 2>/dev/null | head -1 || true)
           if [ -n "$standard" ]; then
-            cp "$standard" "out/antiGem-standard-v${VERSION}-android10.apk"
-            echo "ANTIGEM_STANDARD=out/antiGem-standard-v${VERSION}-android10.apk" >> "$GITHUB_ENV"
+            cp "$standard" "out/antigem-standard-v${VERSION}-android10.apk"
+            echo "ANTIGEM_STANDARD=out/antigem-standard-v${VERSION}-android10.apk" >> "$GITHUB_ENV"
           fi
           ls -lh out
 
@@ -143,9 +152,10 @@ jobs:
           for apk in out/*.apk; do
             LINE="$( "$BUILD_TOOLS/aapt2" dump badging "$apk" 2>/dev/null | head -1 )"
             SDK="$( "$BUILD_TOOLS/aapt2" dump badging "$apk" 2>/dev/null | grep -E '^sdkVersion|^targetSdkVersion' | tr '\n' ' ' )"
+            LABEL="$( "$BUILD_TOOLS/aapt2" dump badging "$apk" 2>/dev/null | grep -E '^application-label:' | tr '\n' ' ' )"
             CERT="$( "$BUILD_TOOLS/apksigner" verify --print-certs "$apk" 2>/dev/null | grep -E 'certificate DN|SHA-256 digest' | head -2 | tr '\n' ' ' )"
             SUM="$(sha256sum "$apk" | cut -d' ' -f1)"
-            echo "::notice title=$(basename "$apk")::$LINE | $SDK | $CERT | sha256=$SUM | size=$(stat -c%s "$apk")"
+            echo "::notice title=$(basename "$apk")::$LABEL | $LINE | $SDK | $CERT | sha256=$SUM | size=$(stat -c%s "$apk")"
           done
 
       - name: Upload workflow artifact
@@ -160,13 +170,15 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          NOTES="antiGem ${{ env.VERSION }} built from https://github.com/Santoshkurmi/antigem at tag ${{ steps.up.outputs.ref }}.
+          NOTES="# antigem ${{ env.VERSION }} (Android 10)
+          Built from https://github.com/Santoshkurmi/antigem at tag ${{ steps.up.outputs.ref }} — upstream's app name is AntiGem; the launcher label in these APKs is \`antigem\`.
           Mobile IDE wrapping the Antigravity CLI (Gemini) and Claude CLI with a code editor, AI chat, Git client and Termux terminal.
           Installable release APK, minSdk 24 — works on Android 10 (API 29) and newer. Signed with this repo's own stable key, so updates install over older builds.
-          \`antiGem-termux-v${VERSION}-android10.apk\` = package com.termux (replaces/coexists per upstream design)."
+          \`antigem-v${VERSION}-android10.apk\` = package \`com.termux\` (standalone, recommended — no separate Termux needed).
+          \`antigem-standard-v${VERSION}-android10.apk\` = package \`com.antigem\` (needs the Termux app + bridge)."
           if gh release view antigem-apk > /dev/null 2>&1; then
-            gh release edit antigem-apk --title "antiGem — Android 10 APK (latest)" --notes "$NOTES" --prerelease
+            gh release edit antigem-apk --title "antigem — Android 10 APK (latest)" --notes "$NOTES" --prerelease
           else
-            gh release create antigem-apk --title "antiGem — Android 10 APK (latest)" --notes "$NOTES" --prerelease --target "$GITHUB_SHA"
+            gh release create antigem-apk --title "antigem — Android 10 APK (latest)" --notes "$NOTES" --prerelease --target "$GITHUB_SHA"
           fi
           gh release upload antigem-apk out/*.apk --clobber

@@ -41,26 +41,36 @@ Download `X-Battle-Royale-Android10.apk`, tap it on your phone, allow
 "install from this source", and play — fully offline, models included.
 Details: [ANDROID.md](ANDROID.md).
 
-## 🔗 Linked project — antiGem (Android 10 APK)
+## 🔗 Linked project — antigem (Android 10 APK)
 
-This repo also builds an Android 10 APK for the linked project
-**[antiGem](https://github.com/Santoshkurmi/antigem)** (`Santoshkurmi/antigem`) —
+**antigem** is the APK built here from the linked project
+**[AntiGem](https://github.com/Santoshkurmi/antigem)** (`Santoshkurmi/antigem`) —
 a mobile IDE that wraps the Antigravity CLI (Gemini) and the Claude CLI with a
-code editor, AI chat, Git client and full Termux terminal.
+code editor, AI chat, built-in Git client and a full Termux terminal. These APKs
+carry the launcher label **antigem**.
 
-- **APK:** [`antiGem-termux-v1.0.17-android10.apk`](https://github.com/shabuboss43-hash/BR-game/releases/download/antigem-apk/antiGem-termux-v1.0.17-android10.apk)
-  · also `antiGem-standard-v1.0.17-android10.apk` on the
+- **APK:** [`antigem-v1.0.17-android10.apk`](https://github.com/shabuboss43-hash/BR-game/releases/download/antigem-apk/antigem-v1.0.17-android10.apk)
+  (package `com.termux`, standalone — recommended) · also
+  `antigem-standard-v1.0.17-android10.apk` (package `com.antigem`) on the
   [antigem-apk release](https://github.com/shabuboss43-hash/BR-game/releases/tag/antigem-apk)
-- Built straight from the upstream tag `v1.0.17` by
+- Built straight from upstream tag `v1.0.17` by
   [`.github/workflows/build-antigem-apk.yml`](.github/workflows/build-antigem-apk.yml)
-  (daily check for a newer upstream tag; run it manually with any tag/branch).
-- minSdk 24 / targetSdk 28, so **Android 10 (API 29) is supported**, and it is
-  release-mode (minified + resource-shrunk) and signed with a stable key of this
-  repo, so newer builds install over older ones.
-- `termux` flavor = package `com.termux`, `standard` flavor = package
-  `com.antigem` (per upstream's flavor design); install either, or both.
+  (daily check for a newer upstream tag; manual runs accept any tag/branch).
+- **Android 10: yes.** minSdk 24, targetSdk 28 → runs on Android 10 (API 29)
+  and newer; release-mode build (minified + resource-shrunk), signed with a
+  stable key of this repo so newer builds install over older ones.
 
-### Controls
+**Which AI models does it use?** No model is bundled in the APK — the app is a
+client. It talks to **Google Antigravity (`agy`)** over gRPC, which serves the
+Gemini models your Google account is entitled to (the bridge's default model id
+is `gemini-3.7-flash-high`; the model list is fetched live at runtime), and it
+runs **Claude Code** (`claude` CLI, e.g. `claude-sonnet-5-5` / `claude-opus-5-5`)
+inside its Linux sandbox. Sign-in is via Google OAuth or the Claude CLI login.
+There is **no "Gemini 4 Argon"** model anywhere in the project — that name does
+not exist upstream, and models are server-side, so nothing like it can be added
+by building the APK.
+
+### Controls### Controls
 
 | Action | Mobile (touch) | Desktop |
 | --- | --- | --- |
