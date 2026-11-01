@@ -45,23 +45,34 @@ jobs:
 
       - name: Resolve upstream ref (latest tag unless pinned by input)
         id: up
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          set -o pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.ref }}" ]; then
             REF="${{ github.event.inputs.ref }}"
           else
-            git init -q upstream-probe && cd upstream-probe
-            git remote add origin https://github.com/Santoshkurmi/antigem.git
-            REF=$(git ls-remote --tags --refs origin | sed 's#.*refs/tags/##' | sort -V | tail -1)
-            cd .. && rm -rf upstream-probe
+            REF=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" \
+              "https://api.github.com/repos/Santoshkurmi/antigem/tags?per_page=100" \
+              | python3 -c "import json,sys;print(json.load(sys.stdin)[0]['name'])")
           fi
           echo "ref=$REF" >> "$GITHUB_OUTPUT"
           echo "Building Santoshkurmi/antigem @ $REF"
 
-      - name: Clone upstream source (pinned tag)
+      # Downloads the upstream source tarball instead of `git clone`, so no git
+      # credentials from this repo are involved (they are scoped to this repo).
+      - name: Download upstream source (pinned tag)
+        env:
+          REF: ${{ steps.up.outputs.ref }}
         run: |
-          git clone --depth 1 --branch "${{ steps.up.outputs.ref }}" \
-            https://github.com/Santoshkurmi/antigem.git src
-          cd src && git log -1 --oneline && cat version.json
+          set -o pipefail
+          curl -fsSL -o antigem-src.tar.gz \
+            "https://codeload.github.com/Santoshkurmi/antigem/tar.gz/refs/tags/$REF" \
+            || curl -fsSL -o antigem-src.tar.gz \
+                 "https://codeload.github.com/Santoshkurmi/antigem/tar.gz/refs/heads/$REF"
+          ls -lh antigem-src.tar.gz
+          mkdir -p src && tar xzf antigem-src.tar.gz -C src --strip-components=1
+          cat src/version.json
 
       - name: Set up Java 21
         uses: actions/setup-java@v4
